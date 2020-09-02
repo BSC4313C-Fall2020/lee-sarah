@@ -1,4 +1,4 @@
-### Lab 2. Brief Introduction to RStudio
+## Lab 2. Brief Introduction to RStudio
 
 # Before anything else, verify that your environment is totally clear.
 # This is important, because old objects can foul up the works
