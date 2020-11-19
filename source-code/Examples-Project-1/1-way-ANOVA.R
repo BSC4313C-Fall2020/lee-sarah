@@ -1,20 +1,21 @@
-#### Lab 7: 1-way ANOVA #### 
+### Example simple 1-way ANOVA with graphs ###
+
 # Clean up the working environment
 rm(list = ls())
 # Verify working directory, should be ~/Documents/Analyses/lastname_first
 getwd()
 
-# Install package ggfortify, *note* only do install.packages ONCE
-# ggfortify is a package that works with ggplot2 to make nice plots
+library(tidyverse)
+library(nlme)
+
+# *Note* only do install.packages ONCE
+# ggfortify is a package that works with ggplot2 to make diagnostic plots.
+# multcomp is used for contrasts and multiple comparisons
 
 # install.packages("ggfortify")
 library("ggfortify")
-# multcomp is used for contrasts and multiple comparisons
 # install.packages("multcomp")
 library("multcomp")
-# nlme is used for random effects ANOVA
-# install.packages("nlme")
-library("nlme")
 
 # Load tidyverse
 library("tidyverse")
@@ -23,31 +24,37 @@ tidyverse_update()
 
 ### General workflow ####
 
-# The general workflow as you do analyses in R should be as follows:
+# The general workflow as you do 1-way ANOVA in R should be as follows:
 #   Step 1.  Plot your data (boxplots, histograms, Q-Q plots)
 #   Step 2.  Use the function lm() to fit a model, specifying equation & data
 #     e.g., y ~ x, data = data
 #   Step 3.  Check assumptions again, using residuals plot
-#   Step 4.  If assumptions are met, use the functions anova() and summary() 
-#     to interpret statistical results.  If assumptions are not met, try 
-#     data transformation and/or a non-parametric or robust version of the test
+#   Step 4a.  If assumptions are met, use the functions anova() and summary() 
+#     to interpret statistical results.  
+#   Step 4b.  If assumptions are not met, try data transformation 
+#   Step 4c.  If distributions remain non-normal, 
+#             use a non-parametric Kruskal-Wallace
+#   Step 4d.  If the ratio of large std dev:smallest std dev is greater than 3,
+#             use robust version of the test, Welch's ANOVA
+#   Step 5.   If you were able to reject the original null, and you have 3 or
+#             more treatments, you can do pairwise comparison of treatments to
+#             to test for significant differences between specific pairs
 
-### Fixed effects ANOVA ####
+
 
 ### Step 1.  Read in and plot data ####
 
-# I have added a new folder with datafiles located at "datasets/r4all"
-daphnia <-read_csv("datasets/r4all/Daphniagrowth.csv", col_types = cols(
-  parasite = col_factor() ))
+# I have added a new folder with datafiles located at "datasets/example-analyses"
+
 
 # It is important to read in the predictor as a factor
 # In the case of this dataset, the parasite names have a space so I recoded
 # the factor levels using the function fct_recode()
 daphnia <- daphnia %>%
   mutate(parasite = fct_recode(parasite, Metschnikowia = "Metschnikowia bicuspidata",
-             Pansporella = "Pansporella perplexa",
-             Pasteuria = "Pasteuria ramosa"
-             ))
+                               Pansporella = "Pansporella perplexa",
+                               Pasteuria = "Pasteuria ramosa"
+  ))
 
 # The research question here is two-fold: Q1: whether parasites alter host growth rates, 
 # Q2: whether each of the three parasites reduces growth, compared with a control, 
@@ -153,8 +160,8 @@ summary(model01)
 
 planned <- glht(model01, linfct = 
                   mcp(parasite = c("Metschnikowia - control = 0",
-                                    "Pansporella - control = 0",
-                                    "Pasteuria - control = 0")))
+                                   "Pansporella - control = 0",
+                                   "Pasteuria - control = 0")))
 confint(planned)
 summary(planned)
 
@@ -180,61 +187,4 @@ kruskal.test(growth.rate ~ parasite, data = daphnia)
 # I cannot tell you why the function for this is called oneway.test()
 # Regardless this is how you do it:
 oneway.test(growth.rate ~ parasite, data = daphnia)
-
-### Random effects ANOVA ####
-# For this, we will use the example in your book examining the repeatibility of
-# measurements on walking stick limbs
-stick <- read_csv("datasets/abd/chapter15/chap15e6WalkingStickFemurs.csv",
-                  col_types = cols(specimen = col_factor() ) )
-
-# To include a random effect, we no longer use the linear model function lm(),
-# instead we use lme()
-
-# The random effects ANOVA function requires two formulas, rather than just one. 
-# The first formula (beginning with "fixed =") is for the fixed effect. The walking
-# stick insect example doesn't include a fixed-effect variable, so we just provide
-# a symbol for a constant in the formula ("~ 1"), representing the grand mean. The
-# second formula (beginning with "random =") is for the random effect. In this 
-# example, the individual specimens are the random groups, and the second formula
-# indicates this (the "~ 1" in the formula below indicates that each specimen has 
-# its own mean). You will need to have loaded the nlme library.
-
-model02 <- lme(fixed = femurLength ~ 1,
-               random = ~1|specimen, data = stick)
-
-# Obtain the variance components for the random effects using VarCorr. The output includes
-# the standard deviation and variance for both components of random variation in the random
-# effects model for this example. The first is the variance among the specimen means. This 
-# is the variance among groups, and is confusingly labeled "Intercept" in the output. The
-# second component is the variance among measurements made on the same individuals. This 
-# is the within group variance, also known as the error mean square, and is labeled 
-# "Residual" in the output.
-
-model02_varcomp <- VarCorr(model02)
-model02_varcomp
-
-# This gives us the estimates of the variance components for groups/Intercept and 
-# error/Residual
-
-# To get repeatibility, tell R to do some math by extracting the first entry in the first
-# column and calling it VarAmong
-
-varAmong  <- as.numeric( model02_varcomp[1,1] )
-
-# And then extracting the second entry in the first column and calling it VarWithin
-varWithin <- as.numeric( model02_varcomp[2,1] )
-
-# And then doing the math
-repeatability <- varAmong / (varAmong + varWithin)
-repeatability
-
-# End of story, 74% of walking stick femur length is due to variability among actual
-# insects, not picture analysis issues.
-
-
-
-
-
-
-
 

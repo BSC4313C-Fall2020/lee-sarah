@@ -16,6 +16,7 @@
 library(tidyverse)
 
 #' Load the [`gapminder`](https://github.com/jennybc/gapminder) data package.
+#' install.packages("gapminder")
 library(gapminder)
 gapminder
 

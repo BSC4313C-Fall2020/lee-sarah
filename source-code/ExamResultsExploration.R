@@ -1,4 +1,5 @@
-#### Lab 9: Correlation, Linear Regression #### 
+#### Exam results exploration
+
 
 # Clean up the working environment
 rm(list = ls())
@@ -7,7 +8,7 @@ getwd()
 
 
 library("ggfortify")
-install.packages(broom)
+# install.packages("broom")
 library("broom")
 
 
@@ -15,6 +16,22 @@ library("broom")
 library("tidyverse")
 # Check for updates
 tidyverse_update()
+
+# Grades for Exam 1, Marine Biology Fall 2020
+exam1 <- read_csv("datasets/demos/Exam 1 (Remotely Proctored) Quiz Student Analysis Report (1).csv", 
+                  col_types = cols(submitted = col_time(format = "%H:%M %p")))
+
+# Add on a percentage column
+exam1 <- exam1 %>%
+  mutate(percentage = score/38)
+
+# Plot
+ggplot(data = exam1) +
+  geom_point(mapping = aes(x = submitted, y = percentage),
+             colour = "firebrick", size = 2)+
+  theme_bw()+
+  labs( x = "Time submitted", y = "Grade")+ 
+  ylim(0.5, 1.05)
 
 ### Correlation ####
 
@@ -222,7 +239,17 @@ summary(model03)
 # more than 25% of the variation in square root transformed grain number
 # (R2 = 0.2719).
 
+dsm_exam2 <- read_csv("~/Box/Classes/BSC2011-Bio Div/02_Fall 2020/04_Exams/Exam 2/ModuleSummaryTable_Learners_20201014_1808.csv", col_types = cols(Student = col_skip(), Learners = col_skip(), Progress = col_skip()))
+pairs(dsm_exam2)
 
+ggplot(data = dsm_exam2, aes(x = Low_Struggle, y = Exam2Grade)) +
+  geom_point() +
+  geom_smooth(method = "lm", level=0.99) +
+  theme_bw()+
+  labs( x = "Low Struggle", y = "Exam Grade")
 
-
-
+ggplot(data = dsm_exam2, aes(x = Time_Spent, y = Exam2Grade)) +
+  geom_point() +
+  geom_smooth(method = "lm", level=0.99) +
+  theme_bw()+
+  labs( x = "Time_Spent", y = "Exam Grade")
